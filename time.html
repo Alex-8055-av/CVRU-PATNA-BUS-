@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Busmate Seat Availability</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 10px;
+    }
+    h1 {
+      color: #0ff;
+      text-shadow: 0 0 10px #0ff;
+      margin-top: 20px;
+    }
+    .subtitle {
+      color: #ccc;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .legend {
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    .legend span {
+      margin: 0 10px;
+    }
+    .grid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-top: 20px;
+      overflow-x: auto;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .seat {
+      background: #444;
+      border: 2px solid #888;
+      border-radius: 8px;
+      padding: 16px 10px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 14px;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .seat.available {
+      background: #2ecc71;
+      border-color: #27ae60;
+    }
+
+    .seat.booked {
+      background: #e74c3c;
+      border-color: #c0392b;
+    }
+
+    .seat:hover {
+      transform: scale(1.05);
+    }
+
+    .aisle {
+      width: 40px;
+    }
+
+    .summary {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #0ff;
+      text-shadow: 0 0 5px #0ff;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 14px;
+      background: #0ff;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #00f0ff;
+    }
+
+    @media (max-width: 600px) {
+      .seat {
+        padding: 12px 8px;
+        font-size: 12px;
+        min-width: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🚌 Today's Bus Seat Availability</h1>
+  <p class="subtitle">Tap a seat to toggle its status. Seats reset daily.</p>
+
+  <div class="legend">
+    <span style="color:#2ecc71;">🟩 Available</span>
+    <span style="color:#e74c3c;">🟥 Booked</span>
+  </div>
+
+  <div class="grid" id="seatGrid"></div>
+
+  <div class="summary" id="summary"></div>
+  <button onclick="resetSeats()">🔄 Reset All Seats</button>
+
+  <script>
+    const grid = document.getElementById('seatGrid');
+    const summary = document.getElementById('summary');
+    const today = new Date().toISOString().split('T')[0];
+    const lastVisit = localStorage.getItem('lastVisit');
+    let seatStatus = {};
+    const seatLabels = {
+  
+    };
+
+    if (lastVisit !== today) {
+      localStorage.setItem('lastVisit', today);
+      for (let i = 1; i <= 40; i++) {
+        seatStatus[i] = 'available';
+      }
+      localStorage.setItem('seatStatus', JSON.stringify(seatStatus));
+    } else {
+      seatStatus = JSON.parse(localStorage.getItem('seatStatus')) || {};
+    }
+
+    let seatNumber = 1;
+    for (let i = 0; i < 8; i++) {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      for (let j = 0; j < 2; j++) {
+        row.appendChild(createSeat(seatNumber++));
+      }
+
+      const aisle = document.createElement('div');
+      aisle.className = 'aisle';
+      row.appendChild(aisle);
+
+      for (let j = 0; j < 3; j++) {
+        row.appendChild(createSeat(seatNumber++));
+      }
+
+      grid.appendChild(row);
+    }
+
+    function createSeat(num) {
+      const seat = document.createElement('div');
+      const label = seatLabels[num] || "";
+      seat.className = `seat ${seatStatus[num] || 'available'}`;
+      seat.textContent = `Seat ${num}${label ? ' (' + label + ')' : ''}`;
+      seat.onclick = () => {
+        seat.classList.toggle('available');
+        seat.classList.toggle('booked');
+        seatStatus[num] = seat.classList.contains('booked') ? 'booked' : 'available';
+        localStorage.setItem('seatStatus', JSON.stringify(seatStatus));
+        updateSummary();
+      };
+      return seat;
+    }
+
+    function updateSummary() {
+      const booked = Object.values(seatStatus).filter(s => s === 'booked').length;
+      const available = 40 - booked;
+      summary.textContent = `Available: ${available} | Booked: ${booked}`;
+    }
+
+    function resetSeats() {
+      for (let i = 1; i <= 40; i++) {
+        seatStatus[i] = 'available';
+      }
+      localStorage.setItem('seatStatus', JSON.stringify(seatStatus));
+      location.reload();
+    }
+
+    updateSummary();
+  </script>
+</body>
+</html>
